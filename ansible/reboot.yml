@@ -1,0 +1,9 @@
+---
+- name: Reboot nodes
+  hosts: all
+  become: yes  # Используйте sudo для выполнения команд
+  tasks:
+    - name: Reboot the node
+      reboot:
+        msg: "Reboot initiated by Ansible playbook"
+

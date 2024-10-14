@@ -1,0 +1,126 @@
+terraform {
+  required_providers {
+    yandex = {
+      source  = "yandex-cloud/yandex"
+      version = "~> 0.50.0"
+    }
+  }
+}
+
+provider "yandex" {
+  token     = var.yandex_cloud_oauth_token
+  cloud_id  = var.cloud_id
+  folder_id = var.folder_id
+}
+
+data "yandex_compute_image" "ubuntu_image" {
+  family = "ubuntu-2004-lts"
+}
+
+resource "yandex_vpc_network" "default" {
+  name        = "net-for-dev"
+  description = "Network for development"
+}
+
+resource "yandex_vpc_subnet" "my_subnet" {
+  name           = "my-subnet"
+  zone           = "ru-central1-a"
+  network_id     = yandex_vpc_network.default.id
+  v4_cidr_blocks = ["192.168.1.0/24"]
+}
+
+resource "yandex_vpc_security_group" "test_sg" {
+  name        = "MSG"
+  description = "Description for security group"
+  network_id  = yandex_vpc_network.default.id
+
+  ingress {
+    protocol       = "TCP"
+    description    = "Allow HTTP"
+    v4_cidr_blocks = ["0.0.0.0/0"]
+    port           = 80
+  }
+
+  ingress {
+    protocol       = "TCP"
+    description    = "Allow SSH"
+    v4_cidr_blocks = ["0.0.0.0/0"]
+    port           = 22
+  }
+
+  egress {
+    protocol       = "ANY"
+    description    = "Allow all outbound traffic"
+    v4_cidr_blocks = ["0.0.0.0/0"]
+  }
+}
+
+resource "yandex_vpc_address" "addr" {
+  count = 2
+  name = "public-ip-${count.index + 1}"
+
+  external_ipv4_address {
+    zone_id = "ru-central1-a"
+  }
+}
+
+resource "yandex_compute_instance" "my_instance" {
+  count = 2
+
+  name = "my-instance-${count.index + 1}"
+  zone = "ru-central1-a"
+
+  resources {
+    cores  = 2
+    memory = 4
+  }
+
+  boot_disk {
+    initialize_params {
+      image_id = data.yandex_compute_image.ubuntu_image.id
+    }
+  }
+
+  network_interface {
+    subnet_id = yandex_vpc_subnet.my_subnet.id
+    security_group_ids = [yandex_vpc_security_group.test_sg.id]
+    nat = true
+    nat_ip_address = yandex_vpc_address.addr[count.index].external_ipv4_address[0].address
+
+
+  }
+
+  metadata = {
+    user-data = <<-EOF
+                #cloud-config
+                users:
+                  - name: yelzhas
+                    ssh-authorized-keys:
+                      - ${var.ssh_public_key}
+                runcmd:
+                  - echo "Hello, World from instance ${count.index + 1}!" > /var/www/html/index.html
+                EOF
+  }
+}
+
+output "network_id" {
+  description = "ID of the created VPC network"
+  value       = yandex_vpc_network.default.id
+}
+
+output "subnet_id" {
+  description = "ID of the created subnet"
+  value       = yandex_vpc_subnet.my_subnet.id
+}
+
+output "security_group_id" {
+  description = "ID of the created security group"
+  value       = yandex_vpc_security_group.test_sg.id
+}
+
+output "instance_ips" {
+  description = "IP addresses of the created instances"
+  value = [for ip in yandex_vpc_address.addr : ip.external_ipv4_address[0].address]
+
+}
+

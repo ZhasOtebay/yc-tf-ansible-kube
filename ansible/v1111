@@ -1,0 +1,99 @@
+---
+- name: Установка Kubernetes на Ubuntu
+  hosts: all
+  become: yes
+
+  tasks:
+    - name: Установка необходимых пакетов
+      apt:
+        pkg:
+          - apt-transport-https
+          - ca-certificates
+          - curl
+          - software-properties-common
+        state: latest
+
+    - name: Создание директории для APT ключей
+      file:
+        path: /etc/apt/keyrings
+        state: directory
+        mode: '0755'
+
+    - name: Загрузка GPG ключа Kubernetes
+      shell: curl -fsSL https://pkgs.k8s.io/core:/stable:/v1.30/deb/Release.key | gpg --dearmor -o /etc/apt/keyrings/kubernetes-apt-keyring.gpg
+
+    - name: Добавление репозитория Kubernetes
+      apt_repository:
+        repo: "deb [signed-by=/etc/apt/keyrings/kubernetes-apt-keyring.gpg] https://pkgs.k8s.io/core:/stable:/v1.30/deb/ /"
+        state: present
+
+    - name: Обновление списка пакетов
+      apt:
+        update_cache: yes
+
+    - name: Установка Docker
+      apt:
+        name: docker.io
+        state: present
+
+    - name: Установка Containerd
+      apt:
+        name: containerd
+        state: present
+
+    - name: Установка kubeadm, kubelet, kubectl
+      apt:
+        name:
+          - kubelet
+          - kubeadm
+          - kubectl
+        state: present
+
+    - name: Удержание пакетов kubelet, kubeadm, kubectl
+      command: apt-mark hold kubelet kubeadm kubectl
+
+    - name: Отключение swap
+      command: swapoff -a
+      ignore_errors: yes
+
+    - name: Комментарий swap в fstab
+      lineinfile:
+        path: /etc/fstab
+        regexp: '^\s*[^#].*swap'
+        state: absent
+
+    - name: Настройка сети Kubernetes
+      copy:
+        dest: /etc/sysctl.d/kubernetes.conf
+        content: |
+          net.bridge.bridge-nf-call-ip6tables = 1
+          net.bridge.bridge-nf-call-iptables = 1
+          net.ipv4.ip_forward = 1
+
+    - name: Перезагрузка конфигурации sysctl
+      command: sysctl --system
+
+    - name: Настройка Docker для использования Containerd
+      copy:
+        dest: /etc/docker/daemon.json
+        content: |
+          {
+            "debug": true,
+            "log-level": "info",
+            "storage-driver": "overlay2",
+            "storage-opts": [
+              "overlay2.override_kernel_check=true"
+            ],
+            "default-runtime": "runc",
+            "runtimes": {
+              "runc": {
+                "path": "runc"
+              }
+            }
+          }
+
+    - name: Перезапуск Docker
+      systemd:
+        name: docker
+        state: restarted
+

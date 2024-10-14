@@ -1,0 +1,61 @@
+Следующие шаги после раскатки плейбука Ansible
+
+Теперь, когда Kubernetes и его инструменты установлены на контрольном и рабочих узлах, выполните оставшиеся шаги.
+
+1. Отключите swap на всех узлах
+На всех узлах (контрольном и рабочих):
+
+sudo swapoff -a
+Отредактируйте файл /etc/fstab, чтобы отключить swap при загрузке. Найдите строку, содержащую swap, и закомментируйте её, добавив # в начале.
+
+2. Настройка необходимых модулей
+На всех узлах:
+
+sudo modprobe overlay
+sudo modprobe br_netfilter
+
+3. Настройка сети для Kubernetes
+На всех узлах: Откройте или создайте файл /etc/sysctl.d/kubernetes.conf и добавьте в него следующие строки:
+
+net.bridge.bridge-nf-call-ip6tables = 1
+net.bridge.bridge-nf-call-iptables = 1
+net.ipv4.ip_forward = 1
+Затем выполните:
+
+sudo sysctl --system
+
+4. Инициализация кластера на контрольном узле
+На контрольном узле выполните команду:
+
+sudo kubeadm init --control-plane-endpoint=<master-ip> --upload-certs
+(замените <master-ip> на IP-адрес вашего контрольного узла).
+
+5. Настройка kubectl
+На контрольном узле после инициализации выполните:
+
+mkdir -p $HOME/.kube
+sudo cp -i /etc/kubernetes/admin.conf $HOME/.kube/config
+sudo chown $(id -u):$(id -g) $HOME/.kube/config
+(возможно и на воркерах тоже придется)
+
+6. Установка сетевого плагина (например, Flannel)
+На контрольном узле выполните:
+ 
+kubectl apply -f https://github.com/flannel-io/flannel/releases/latest/download/kube-flannel.yml
+
+7. Присоединение рабочих узлов к кластеру
+На контрольном узле будет команда kubeadm join.
+после запуска команды  пункта 4  в конце лога будет текст:
+You can now join any number of the control-plane node running the following command on each as root:
+
+  kubeadm join 10.0.0.16:6443 --token vr0zwo.l57jwclm42s5l2p0 \
+        --discovery-token-ca-cert-hash sha256:de0 45563cf1ff \
+        --control-plane --certificate-key  26216 
+
+Please note that the certificate-key gives access to cluster sensitive data, keep it secret!
+ Скопируйте её и выполните на каждом рабочем узле:
+ 
+8. Проверка состояния кластера
+После выполнения всех шагов на контрольном узле проверьте состояние узлов с помощью команды:
+
+kubectl get nodes

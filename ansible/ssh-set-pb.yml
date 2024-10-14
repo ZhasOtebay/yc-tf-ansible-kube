@@ -1,0 +1,41 @@
+---
+- name: Setup SSH Access between all servers
+  hosts: all
+  become: no
+  tasks:
+    - name: Ensure the SSH key directory exists
+      file:
+        path: /home/{{ ansible_ssh_user }}/.ssh
+        state: directory
+        mode: '0700'
+        owner: "{{ ansible_ssh_user }}"
+        group: "{{ ansible_ssh_user }}"
+
+    - name: Generate SSH key pair if it does not exist
+      openssh_keypair:
+        path: /home/{{ ansible_ssh_user }}/.ssh/id_rsa
+        state: present
+        type: rsa
+        size: 2048
+
+    - name: Read the public key
+      slurp:
+        src: /home/{{ ansible_ssh_user }}/.ssh/id_rsa.pub
+      register: public_key_data
+
+    - name: Add all public keys to authorized_keys
+      authorized_key:
+        user: "{{ ansible_ssh_user }}"
+        state: present
+        key: "{{ item }}"
+      loop: "{{ ansible_play_hosts | map('extract', hostvars, ['public_key_data', 'content']) | map('b64decode') | list }}"
+      when: inventory_hostname != item.split()[1]
+
+    - name: Ensure permissions on authorized_keys
+      file:
+        path: /home/{{ ansible_ssh_user }}/.ssh/authorized_keys
+        state: file
+        mode: '0600'
+        owner: "{{ ansible_ssh_user }}"
+        group: "{{ ansible_ssh_user }}"
+

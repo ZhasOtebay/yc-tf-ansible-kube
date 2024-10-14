@@ -1,0 +1,24 @@
+---
+- name: Переименование хостов в master и worker
+  hosts: all
+  become: yes
+  tasks:
+    - name: Переименование хоста
+      command: hostnamectl set-hostname "{{ item }}"
+      loop:
+        - "{{ 'master' if inventory_hostname in groups['control_plane'] else 'worker' }}"
+      
+    - name: Обновление /etc/hosts
+      lineinfile:
+        path: /etc/hosts
+        regexp: '^127\.0\.1\.1\s+.*'
+        line: "127.0.1.1 {{ item }}"
+      loop:
+        - "{{ 'master' if inventory_hostname in groups['control_plane'] else 'worker' }}"
+      
+    - name: Перезагрузка системы
+      reboot:
+        msg: "Перезагрузка для применения изменений"
+        reboot_timeout: 60
+
+

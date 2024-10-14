@@ -1,0 +1,2 @@
+ansible-playbook -i inventory_file your_playbook.yml --extra-vars "master_ip=<master-ip>"
+
