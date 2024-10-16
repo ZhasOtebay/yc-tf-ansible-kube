@@ -1,6 +1,6 @@
-yandex_cloud_oauth_token = "y0_AgAAAAAnfpYzAATuwQAAAAEC-phFAACqgB1y2-1IVYtOqDGZ0nxJ7-bMVg"
-cloud_id = "b1g109mninmo9kimf35k"
-folder_id = "b1gkdjevqctuq72rt07i"
-ssh_public_key = "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABgQDiaYzvH9K8kCXW1+n4iKv2UTUonLAp0lZC9NCLnIWeajP13tRuzDsxGiHLj5D1hQvd7L+N3X6CLtyJN6dL6uBm84gTXTIBNUmoZes4DZY9bozzFqzw7aladtCFF5gtYdWzvbZuJvpPkXuyanpxJvG1+4fdLwybbX0gdOj5aB0hTe3EkCzzM/MIl+wVQYy5hg42k7ytnT3ZBUNYDTTpJC94V3J3deK/c1yEY/C5KZCIZAPVYl1B8we8eIoCZVNG38uje7GCm5M0EhsnUnq5VX2lMzhafEga2Zo3dPkbDhnLznMNzauiAFYtCz9CwJKbjB6rP6W4MH/cSOJVy8eauo8OhMuTQS1kgVSFM/+RBxjA9Em3Vi9tEJQh9Bxwr/Wmqw0fIWre0sLiKr9a6tf7g0G96EAfCSycDLfaD5MJOpyWV+cMrL0poxViHbxfc2UsH+w3MbeK2bbHxpeX2xH/I68u9qQxv42fh8qVXybUZa2LT0ceEuK1lIrHnm/vEzmbALU= elzasutebaev@kubedocker"
+yandex_cloud_oauth_token = " "
+cloud_id = " "
+folder_id = " "
+ssh_public_key = "s@kubedocker"
 
 
